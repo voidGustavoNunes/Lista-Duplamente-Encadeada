@@ -1,0 +1,332 @@
+/*
+-- Laboratório de Análises Clínicas
+-- 21/03/2022
+------------------------------------------------------------------------------------------------------------------------
+-- Tabelas e carga de registros ----------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------*/
+
+
+/*PACIENTE: Tabela para armazenamento de dados pessoais dos clientes do Laboratório. Para efeito de simplificação evitamos
+dados como endereço, e-mail, celular, telefone, profissão etc.
+*/
+
+CREATE TABLE PACIENTE (
+   MATRICULA SERIAL NOT NULL PRIMARY KEY,
+   NOME VARCHAR(40) NOT NULL,
+   SEXO CHAR(1) NOT NULL,
+   NASCIMENTO DATE NOT NULL	
+);
+
+INSERT INTO PACIENTE VALUES (235,'JOSÉ SOUZA','M','1967-01-21');
+INSERT INTO PACIENTE VALUES (236,'MARLA GOMES TALIN','F','1976-05-11');
+INSERT INTO PACIENTE VALUES (237,'CINTHIA RIBEIRO','F','1971-05-17');
+
+SELECT * FROM PACIENTE;
+
+/*
+PLANO: Armazena dados sobre Planos de Saúde existentes e conveniados com o laboratório. Os pacientes poderão efetuar Pedidos
+de Exames a serem pagos totalmente ou parcialmente por esses Planos. Existirão, por exemplo, Planos em que o o Paciente
+nada desembolsa (ficando todo o custo por conta de seu Plano). Em outras situações, o paciente arca com um percentual do
+valor cobrado e o Plano com o restante).
+*/
+
+CREATE TABLE PLANO (
+   ID_PLANO SERIAL NOT NULL PRIMARY KEY,
+   NOME VARCHAR(40) NOT NULL,
+   PERCENTUAL_PAGO_CLIENTE NUMERIC(5,2) NOT NULL,
+   PERCENTUAL_PAGO_PLANO NUMERIC(5,2) NOT NULL	
+);
+
+INSERT INTO PLANO VALUES (1,'UNISAU PLENO', 0,100), (2,'UNISAU PARTICIPACOES',50,50), (3,'SANTA BERNADETE',40,60),
+                          (4,'SOLA MUERTE',100,0);
+INSERT INTO PLANO VALUES (0,'PARTICULAR',100,0);
+
+SELECT * FROM PLANO;
+
+/*
+US: Unidade de Serviço (U.S.) é um valor que será base da formação do preço de cada plano coberto por cada Plano de Saúde em um
+período de vigência. Tal valor pode ser atualizado contratualmente de tempos em tempos.
+*/
+
+DROP TABLE US;
+
+CREATE TABLE US (
+   ID_US SERIAL NOT NULL PRIMARY KEY,
+   ID_PLANO INTEGER NOT NULL,
+   DT_FINAL_VIGENCIA DATE,
+   VALOR NUMERIC(9,2) NOT NULL,
+	
+   FOREIGN KEY (ID_PLANO) REFERENCES PLANO (ID_PLANO) ON DELETE RESTRICT
+);
+
+INSERT INTO US VALUES (1,0,'2022-03-25',3.5), (2,0,NULL,5),(3,1,'2022-04-03',4),(4,1,NULL,6),(5,2,NULL,5),(6,3,NULL,5.5),(7,4,NULL,6);
+
+SELECT * FROM US;
+
+/*
+PEDIDO: Dados sobre Pedidos de Exame abertos pelos Pacientes. O Pedido é a entidade que agrega todos os exames pedidos por um
+Paciente em uma data e hora específicos.
+*/
+
+CREATE TABLE PEDIDO (
+   NR_PEDIDO SERIAL NOT NULL PRIMARY KEY,
+   MATRICULA INTEGER NOT NULL,
+   ID_PLANO INTEGER NOT NULL,
+   DT_PEDIDO DATE NOT NULL,
+	
+   FOREIGN KEY (MATRICULA) REFERENCES PACIENTE (MATRICULA) ON DELETE RESTRICT,
+   FOREIGN KEY (ID_PLANO) REFERENCES PLANO (ID_PLANO) ON DELETE RESTRICT	
+);
+
+INSERT INTO PEDIDO VALUES(100, 235,0,'2022-03-21'), (101,236,3,'2022-03-21');
+
+SELECT * FROM PEDIDO;
+
+/* MATERIAL: Material sobre o qual será realizado um exame (sangue, fezes, urina, esperma etc).*/
+
+CREATE TABLE MATERIAL(
+   ID_MATERIAL CHAR(3) NOT NULL PRIMARY KEY,
+   NOME_MATERIAL VARCHAR(25) NOT NULL	
+);
+
+INSERT INTO MATERIAL VALUES('SAN','SANGUE'),('FEZ','FEZES'),('URI','URINA'),('ESP','ESPERMA'),('SEC','SECREÇÃO DO NARIZ');
+
+SELECT * FROM MATERIAL;
+
+/EXAME: identifica os exames que o laboratório está habilitado a realizar para os pacientes./
+
+CREATE TABLE EXAME (
+   ID_EXAME SERIAL NOT NULL PRIMARY KEY,
+   NOME_EXAME VARCHAR(50) NOT NULL,
+   ID_MATERIAL CHAR(3) NOT NULL,
+	
+   FOREIGN KEY (ID_MATERIAL) REFERENCES MATERIAL (ID_MATERIAL)	
+);
+
+INSERT INTO EXAME VALUES (1001,'HEMOGRAMA COMPLETO','SAN'),(1002,'EAS - URINA','URI'),(1003,'CREATININA','SAN'),
+                         (1004,'CREATININA - URINA','URI'),(1005,'BETA HCG (GRAVIDEZ)','SAN'), 
+						 (1006,'CURVA GLICEMICA','SAN');
+
+INSERT INTO EXAME VALUES (1007,'ESPERMOGRAMA','ESP'),(1008,'GLICEMIA POS PRANDIAL','SAN'),(1009,'COPROCULTURA','FEZ'),
+                          (1010,'PARASITOLOGICO','FEZ'),(1011,'PSA - PROSTATA','SAN');
+						  
+SELECT * FROM EXAME;
+
+/*
+EXAME_AUTORIZADO: Exames que são permitidos pelo Plano de Saúde (contêm valor do CH - o coeficiente de honorários - usado
+na precificação do EXAME). Preço do Exame Autorizado = valor CH x valor US.
+*/
+
+CREATE TABLE EXAME_AUTORIZADO (
+   ID_PLANO INTEGER NOT NULL,
+   ID_EXAME INTEGER NOT NULL,
+   VALOR_CH NUMERIC(9,2) NOT NULL,
+
+   FOREIGN KEY (ID_PLANO) REFERENCES PLANO (ID_PLANO) ON DELETE RESTRICT,
+   FOREIGN KEY (ID_EXAME) REFERENCES EXAME (ID_EXAME) ON DELETE RESTRICT,
+   PRIMARY KEY(ID_PLANO, ID_EXAME)
+);
+
+INSERT INTO EXAME_AUTORIZADO VALUES (0,1001,10),(0,1002,12),(0,1003,10),(0,1004,13),(0,1005,14),(0,1006,20),(0,1007,20),
+                                     (0,1008,21),(0,1009,22),(0,1010,23),(0,1011,24),(1,1001,10),(1,1002,15),(1,1003,16),
+									 (1,1004,20),(1,1005,21),(1,1006,22),(1,1007,30), (1,1008,50),(1,1009,50), (1,1010,60),
+									 (1,1011,70);
+
+INSERT INTO EXAME_AUTORIZADO VALUES (2,1001,10),(2,1002,12),(2,1003,10),(2,1004,13),(2,1005,14),(3,1006,20),(3,1007,20),
+                                     (3,1008,21),(3,1009,22),(3,1010,23),(3,1011,24),(4,1001,10),(4,1002,15),
+									 (4,1005,21),(4,1006,22),(4,1007,30), (4,1010,60), (4,1011,75);
+
+SELECT * FROM EXAME_AUTORIZADO;									 
+				
+/EXAME_PEDIDO: Exames que fazem parte de um Pedido realizado por um Paciente (através de um Plano de Saúde)./
+
+CREATE TABLE EXAME_PEDIDO (
+   NR_PEDIDO INTEGER NOT NULL,
+   ID_EXAME INTEGER NOT NULL,
+   VALOR NUMERIC(9,2) NOT NULL,
+   DT_COLETA DATE,
+   DT_PROCESSAMENTO DATE,
+   DT_FINALIZACAO DATE,
+
+   PRIMARY KEY (NR_PEDIDO, ID_EXAME),
+	
+   FOREIGN KEY (NR_PEDIDO) REFERENCES PEDIDO (NR_PEDIDO),
+   FOREIGN KEY (ID_EXAME) REFERENCES EXAME (ID_EXAME)
+);
+
+SELECT * FROM PEDIDO;
+
+INSERT INTO EXAME_PEDIDO VALUES (100, 1001, 50,'2022-03-21', NULL, NULL),(100,1002,60,'2022-03-21','2022-03-22', NULL),(100, 1003, 50,'2022-03-22',NULL,NULL);
+
+INSERT INTO EXAME_PEDIDO VALUES (101,1006, 110,'2022-03-21', NULL, NULL);
+
+SELECT * FROM EXAME_PEDIDO;
+
+/*FATURA: documento de cobrança enviado a todos os planos (menos o '0 - PARTICULAR' em que o cliente paga 100% do valor do EXAME).
+a DATA EFETIVA RECEBIMENTO é criada com NULL e atualizada apenas quando acusado o pagamento pelo plano de saúde.
+o valor total da FATURA corresponde à soma dos valores de cada PEDIDO registrado como ITEM_FATURA.*/
+
+CREATE TABLE FATURA (
+   NR_FATURA SERIAL NOT NULL PRIMARY KEY,
+   ID_PLANO INTEGER NOT NULL,
+   DT_PREVISTA_RECEBIMENTO DATE NOT NULL,
+   DT_EFETIVA_RECEBIMENTO DATE,
+
+   FOREIGN KEY (ID_PLANO) REFERENCES PLANO (ID_PLANO) ON DELETE RESTRICT	
+);
+
+
+INSERT INTO FATURA VALUES (135, 3,'2022-03-25', NULL);
+
+/*ITEM_FATURA: Pedidos que são incorporados a uma determinada FATURA a ser encaminhada para cobrança dos PLANOs conveniados. */
+
+CREATE TABLE ITEM_FATURA (
+   NR_FATURA INTEGER NOT NULL,
+   NR_PEDIDO INTEGER NOT NULL,
+   
+   PRIMARY KEY(NR_FATURA, NR_PEDIDO),
+   FOREIGN KEY (NR_FATURA)	REFERENCES FATURA (NR_FATURA) ON DELETE RESTRICT,
+   FOREIGN KEY (NR_PEDIDO) REFERENCES PEDIDO (NR_PEDIDO) ON DELETE RESTRICT	
+);
+
+INSERT INTO ITEM_FATURA VALUES (135,101);
+
+/ALTERAÇÃO DA DEFINIÇÃO DE TABELA PEDIDO/
+
+ALTER TABLE PEDIDO ADD COLUMN NR_REGISTRO_PLANO VARCHAR(15); -- COLUNA PARA ARMAZENAR O NÚMERO DE REGISTRO DO PACIENTE NO PLANO DE SAÚDE
+
+UPDATE PEDIDO SET NR_REGISTRO_PLANO = '1.009.919.810' WHERE NR_PEDIDO = 101;
+
+
+/*[1] Escreva uma FUNÇÃO SQL de assinatura OBTER_DADOS_PACIENTE(VARCHAR) em que o usuário passa como parâmetro um trecho do nome de um 
+--    PACIENTE e, em resposta, recebe a MATRICULA, NOME (completo), NASCIMENTO, idade e SEXO. Os dados deverão ser exibidos por ordem
+--    alfabética ascendente de nome.
+--    Essa função tem por objetivo verificar se um dado paciente possui cadastro no LABORATÓRIO. É bem provável que o PACIENTE não lembre
+--    de sua MATRICULA e nem esteja de posse da carterinha.*/
+
+create or replace function obter_dados_paciente(varchar) returns setof record as $$
+
+	select matricula, nome, nascimento, sexo, extract(year from age(current_date, nascimento))
+	from paciente 
+	where nome ilike '%' || $1 || '%'
+	order by nome asc;
+$$
+language sql;
+
+select obter_dados_paciente('MARLA');
+drop function obter_dados_paciente;
+
+
+/*[2] Elabore uma FUNÇÃO PLPGSQL de assinatura CRIAR_PEDIDO(matriculaPaciente, idPlano, nrRegistroPlano) em que o usuário passa como parâmetros 
+--    a MATRICULA, o ID_PLANO do PACIENTE e o número do registro no plano. Esta função deverá inserir um novo registro de PEDIDO, com o 
+--    NR_PEDIDO e DT_PEDIDO sendo gerados automaticamente. DT_PEDIDO deve receber a data corrente do sistema no momento em que a função 
+--    foi invocada. Ao final de sua execução uma consulta SQL deve ser disparada para exibir o NR_PEDIDO, ID_PLANO, NOME_PLANO, MATRICULA,
+--    NOME (do paciente) e DT_PEDIDO.
+--
+--    Consistências que devem ser efetuadas antes da inserção do registro de PEDIDO:
+--       (A) a MATRICULA deve existir na tabela PACIENTE.
+--       (B) o ID_PLANO deve existir na tabela PLANO.
+--       (C) o NR_REGISTRO_PLANO deve ser NULL quando o ID_PLANO for 0 ("PARTICULAR").*/
+
+-----------
+
+CREATE OR REPLACE FUNCTION CRIAR_PEDIDO(MATRICULA INTEGER, ID_PLANO INTEGER, NR_REGISTRO_PLANO VARCHAR) 
+RETURNS SETOF RECORD AS $$
+DECLARE 
+	TOTAL_MATRICULA INTEGER;
+	TOTAL_PLANO INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO TOTAL_MATRICULA FROM PACIENTE P WHERE P.MATRICULA = $1;
+	SELECT COUNT(*) INTO TOTAL_PLANO FROM PLANO PL WHERE PL.ID_PLANO = $2;
+	
+	IF TOTAL_MATRICULA > 0
+		THEN IF TOTAL_PLANO > 0
+			THEN IF $2 = 0
+				THEN 
+					INSERT INTO PEDIDO (MATRICULA, ID_PLANO, NR_REGISTRO_PLANO, DT_PEDIDO) 
+					VALUES ($1, $2, 'NULL', CURRENT_DATE);
+			ELSE
+				INSERT INTO PEDIDO (MATRICULA, ID_PLANO, NR_REGISTRO_PLANO, DT_PEDIDO) 
+					VALUES ($1, $2, $3, CURRENT_DATE);
+			END IF;
+		END IF;
+	END IF;
+	RETURN QUERY 
+		SELECT P.NR_PEDIDO AS NR_PEDIDO, PL.ID_PLANO AS ID_PLANO, PL.NOME AS NOME_PLANO,
+		PA.MATRICULA AS MATRICULA, PA.NOME AS NOME_PACIENTE, P.DT_PEDIDO AS DT_PEDIDO 
+		FROM PEDIDO P, PACIENTE PA, PLANO PL
+		WHERE PA.MATRICULA = $1 
+		AND PL.ID_PLANO = $2 
+		AND P.NR_REGISTRO_PLANO = $3; 
+	RETURN;
+END;
+$$ LANGUAGE PLPGSQL;
+
+SELECT * FROM CRIAR_PEDIDO(235, 2, '1.009.919.810') 
+AS (NR_PEDIDO INTEGER, ID_PLANO INTEGER, NOME_PLANO VARCHAR(40), MATRICULA INTEGER, NOME_PACIENTE VARCHAR(40), DT_PEDIDO DATE);
+
+
+
+/*[3] Faça um STORED PROCEDURE de assinatura CRIAR_EXAME_PEDIDO(NR_PEDIDO, ID_EXAME) em que o usuário informa NR_PEDIDO e ID_EXAME para inserir
+--    um novo registro de EXAME_PEDIDO. As datas DT_COLETA, DT_PROCESSAMENTO e DT_FINALIZADO deverão ser inicialmente todas NULL. O VALOR, para
+--    ser gerado, exigirá uma leitura da Tabela EXAME_AUTORIZADO (com ID_PLANO de PEDIDO e ID_EXAME do parâmetro). Se houver registro de 
+--    EXAME_AUTORIZADO deve-se recuperar o VALOR_CH do exame em questão. Então, por meio de ID_PLANO em PEDIDO, deve-se buscar em VALOR mais 
+--    atualizado na Tabela US (com DT_FINAL_VIGENCIA = NULL). O VALOR (preço) de EXAME_PEDIDO deverá ser o resultado da multiplicação de VALOR
+--    (em US) pelo VALOR_CH (em EXAME_AUTORIZADO).
+--
+--    Consistências que devem ser efetuadas antes da inserção do registro de EXAME_PEDIDO:
+--       (A) NR_PEDIDO deve existir na tabela PEDIDO.
+--       (B) ID_EXAME deve existir na tabela EXAME.
+--       (C) ID_EXAME deve existir na tabela EXAME_AUTORIZADO (o Plano de Saúde deve permiti-lo aos seus conveniados).*/
+
+create or replace procedure valor_do_valor(integer, integer) as $$
+begin
+	select p.id_plano, ex.id_exame
+	from exame_autorizado ex, pedido p
+	where ex.id_exame = $2 and p.id_plano = $1 and ex.id_plano = p.id_plano
+	return ex.valor;
+end;
+$$ language plpgsql;
+
+
+create or replace function busca_valor(integer) as $$
+begin
+	select valor
+	from us, pedido p 
+	where us.id_plano = p.id_plano and dt_final_vigencia is null
+	return max(valor);
+end;
+$$ language plpgsql;
+
+
+create or replace procedure criar_exame_pedido(integer, integer) language plpgsql as $$
+begin
+	insert into exame_pedido(nr_pedido, id_exame, valor) values ($1, $2, (busca_valor($1) *  valor_do_valor($1, $2)))
+	if valor_ch in exame_autorizado is null
+		then valor_ch = valor_do_valor($1, $2)
+	return query;
+end;
+
+
+/*
+insert into exame_pedido (nr_pedido, id_exame, valor) values ($1, $2,);
+
+create or replace procedure criar_exame_pedido(in nr_pedido integer, in id_exame integer) language plpgsql as $$
+declare
+	total integer;
+begin 
+	/* verificar se sao null*/
+	if (total > 0)
+	then
+		select nr_pedido, id_exame
+		from exame_pedido exap, exame e, pedido pe
+		where dt_coleta is null and dt_processamento is null and dt_finalizacao is null and
+		exap.id_exame = e.id_exame and exap.nr_pedido = pe.nr_pedido;
+	
+		select exaaut.id_plano, exaaut.id_exame
+		from exame_autorizado exaaut, plano pla
+		where 
+		
+		
+end
+*/

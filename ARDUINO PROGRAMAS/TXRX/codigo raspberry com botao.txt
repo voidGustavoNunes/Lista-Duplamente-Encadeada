@@ -1,0 +1,31 @@
+#Programa  Comunicacao Raspberry e Arduino
+#Autor  FILIPEFLOP
+ 
+import RPi.GPIO as GPIO
+import time
+import serial
+ 
+#Configura a serial e a velocidade de transmissao
+ser = serial.Serial(devttyAMA0, 115200)
+ 
+GPIO.setmode(GPIO.BOARD)
+ 
+#Define o pino do botao como entrada
+GPIO.setup(18, GPIO.IN)
+ 
+#Mensagem inicial
+print (Pressione o botao...)
+ 
+while(1)
+    #Verifica se o botao foi pressionado
+    if GPIO.input(18) == True
+        #Envia o caracter L pela serial
+        ser.write(L)
+        print(Enviado - L)
+        #Aguarda reposta
+        resposta = ser.readline()
+        #Mostra na tela a resposta enviada
+        #pelo Arduino
+        print resposta
+        #Aguarda 0,5 segundos e reinicia o processo
+        time.sleep(0.5)

@@ -1,0 +1,5 @@
+numero= input("Digite um numero de 0 a 9999: ")
+print(numero[0])
+print(numero[1])
+print(numero[2])
+print(numero[3])

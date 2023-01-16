@@ -1,0 +1,25 @@
+%Fatos família Gustavo.
+
+gerou(antonio, euceni).
+gerou(maria, euceni).
+gerou(antonio, cida).
+gerou(maria, cida).
+gerou(antonio, manoel).
+gerou(maria, manoel).
+gerou(euceni, gustavo).
+gerou(ailton, gustavo).
+gerou(euceni, maikon).
+gerou(ailton, maikon).
+gerou(euceni, thiago).
+gerou(ailton, thiago).
+
+homem(antonio).
+homem(manoel).
+homem(gustavo).
+homem(ailton).
+homem(maikon).
+homem(thiago).
+mulher(maria).
+mulher(euceni).
+mulher(cida).
+

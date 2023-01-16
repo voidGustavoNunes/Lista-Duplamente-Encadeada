@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1644438425 source:c:\users\gu-st\onedrive\documentos\c\calculadora 2.0 correta\main.c
+	<stdio.h>
+	<stdlib.h>
+	<ctype.h>
+

@@ -1,0 +1,21 @@
+=======================================================
+			TUTORIAL
+=======================================================
+
+Importante: Preparar os codigos do arduino e raspberry antes de iniciar a montagem dos circuitos!!
+
+1- Preparação do Arduino:
+	*Carregar o programa txrx no arduino primeiramente, onde enviara uma mensagem a partir do raspberry e dirá
+se foi recebido corretamente;
+
+2-Preparação do Raspberry:
+	*Abrir o terminal no raspibian e editar o arquivo " /etc/inittab " usando o leafpad: " $sudo leafpad inittab "
+	*Em seguida, desabilitar o getty(programa que mostra a tela de login) na serial, comentando com # a linha:
+					" T0:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100 "
+	*Salve o arquivo e reinicie o Raspberry;
+
+++++++++++++
+Como funciona o codigo do raspberry? 
+* Enviar caso o botao seja pressionado uma mensagem para o arduino, que ira acender o led e dira se a mensagem cehgou,
+que no caso seria a letra "L"
+	
